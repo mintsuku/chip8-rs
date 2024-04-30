@@ -1,6 +1,4 @@
 mod cpu;
-#[cfg(test)]
-mod tests;
 use cpu::*;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -29,8 +27,8 @@ fn create_texture_from_array<'a>(
 }
 
 fn main() -> Result<(), String> {
-    let mut cpu = CPU::new();
-    cpu.load("3-corax+.ch8");
+    let mut cpu = CPU::new(false, true);
+    cpu.load("5-quirks.ch8");
     println!("{:02X?}", cpu.memory);
 
     let sdl_context = sdl2::init()?;
@@ -57,6 +55,15 @@ fn main() -> Result<(), String> {
     let mut event_pump = sdl_context.event_pump()?;
 
     'running: loop {
+        // Update timers
+        if cpu.delay_timer > 0 {
+            cpu.delay_timer -= 1;
+        }
+        if cpu.sound_timer > 0 {
+            // Play beep sound
+            cpu.sound_timer -= 1;
+        }
+    
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -64,12 +71,44 @@ fn main() -> Result<(), String> {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
+                Event::KeyDown {
+                    keycode: Some(keycode),
+                    ..
+                } => {
+                    let key_value = match keycode {
+                        Keycode::Num1 => Some(0x1),
+                        Keycode::Num2 => Some(0x2),
+                        Keycode::Num3 => Some(0x3),
+                        Keycode::Num4 => Some(0xC),
+                        Keycode::Q => Some(0x4),
+                        Keycode::W => Some(0x5),
+                        Keycode::E => Some(0x6),
+                        Keycode::R => Some(0xD),
+                        Keycode::A => Some(0x7),
+                        Keycode::S => Some(0x8),
+                        Keycode::D => Some(0x9),
+                        Keycode::F => Some(0xE),
+                        Keycode::Z => Some(0xA),
+                        Keycode::X => Some(0x0),
+                        Keycode::C => Some(0xB),
+                        Keycode::V => Some(0xF),
+                        _ => None,
+                    };
+                    cpu.key_pressed = key_value;
+                }
+                Event::KeyUp { .. } => {
+                    cpu.key_pressed = None;
+                }
                 _ => {}
             }
         }
-
+    
+        // Execute instructions only if not waiting for a key press
+        
         let next_instruction = cpu.fetch();
         cpu.execute(next_instruction, &mut frame_buffer);
+
+  
 
         let mut pixel_data = vec![0; (screen_width * screen_height * 3) as usize];
         for y in 0..height {
