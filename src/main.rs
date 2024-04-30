@@ -1,4 +1,6 @@
 mod cpu;
+#[cfg(test)]
+mod tests;
 use cpu::*;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -28,7 +30,7 @@ fn create_texture_from_array<'a>(
 
 fn main() -> Result<(), String> {
     let mut cpu = CPU::new();
-    cpu.load("chip8-other-logo.8o".to_string());
+    cpu.load("3-corax+.ch8");
     println!("{:02X?}", cpu.memory);
 
     let sdl_context = sdl2::init()?;
